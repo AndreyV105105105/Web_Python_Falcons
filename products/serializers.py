@@ -31,7 +31,7 @@ class ProductSerializer(serializers.ModelSerializer):
 class CartItemSerializer(serializers.ModelSerializer):
     """Сериализатор для элементов корзины"""
     product_name = serializers.ReadOnlyField(source='product.name')
-    total_price = serializers.ReadOnlyField(method='get_total_price')
+    total_price = serializers.SerializerMethodField()
 
     class Meta:
         model = CartItem
@@ -50,7 +50,7 @@ class CartItemSerializer(serializers.ModelSerializer):
 class CartSerializer(serializers.ModelSerializer):
     """Сериализатор для корзины"""
     items = CartItemSerializer(many=True, read_only=True)
-    total_price = serializers.ReadOnlyField(source='get_total_price')
+    total_price = serializers.SerializerMethodField()
 
     class Meta:
         model = Cart
