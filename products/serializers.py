@@ -35,7 +35,11 @@ class CartItemSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CartItem
-        fields = ['id', 'cart', 'product', 'product_name', 'quantity', 'total_price']
+        fields = ['id', 'product', 'product_name', 'quantity', 'total_price']
+        read_only_fields = ['id', 'product_name', 'total_price']
+
+    def get_total_price(self, obj):
+        return obj.get_total_price()
 
     def validate(self, data):
         """Проверка наличия товара на складе"""
