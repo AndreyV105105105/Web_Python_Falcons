@@ -12,7 +12,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
 
 
 class ProductViewSet(viewsets.ModelViewSet):
-    """ViewSet для товаров с фильтрацией, поиском и сортировкой"""
+    """ViewSet для товаров"""
 
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
@@ -26,7 +26,7 @@ class ProductViewSet(viewsets.ModelViewSet):
     filterset_fields = ['category', 'is_available', 'price']
     search_fields = ['name', 'description']
     ordering_fields = ['price', 'created_at']
-
+    
 
 class CartViewSet(viewsets.ReadOnlyModelViewSet):
     """ViewSet для просмотра корзины"""
