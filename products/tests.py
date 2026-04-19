@@ -1,5 +1,3 @@
-from django.test import TestCase
-
 from rest_framework.test import APITestCase
 from rest_framework import status
 from django.urls import reverse
@@ -27,7 +25,6 @@ class ProductCatalogTests(APITestCase):
         self.url = reverse('product-list')
     
     def test_get_category_list(self):
-        """Проверяем получение списка категорий"""
         url = reverse('category-list')
         response = self.client.get(url)
         
@@ -36,12 +33,16 @@ class ProductCatalogTests(APITestCase):
         self.assertEqual(response.data['results'][0]['name'], "Электроника")
     
     def test_get_product_list(self):
+        """Проверяет получение списка товаров"""
+
         response = self.client.get(self.url)
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['count'], 2)
     
     def test_search_product(self):
+        """Проверяет работу поиска товаров"""
+
         response = self.client.get(self.url, {'search': 'Xiaomi'})
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -49,6 +50,8 @@ class ProductCatalogTests(APITestCase):
         self.assertEqual(response.data['results'][0]['name'], "Xiaomi 15")
     
     def test_get_product(self):
+        """Проверяет получение товара"""
+
         url = reverse('product-detail', kwargs={'pk': self.product1.id})
         response = self.client.get(url)
         
