@@ -2,29 +2,30 @@ from rest_framework import viewsets, filters
 from django_filters.rest_framework import DjangoFilterBackend
 from .models import Category, Product, Cart, CartItem, Order, OrderItem
 from .serializers import CategorySerializer, ProductSerializer, CartSerializer, CartItemSerializer, OrderSerializer
+from .selectors import get_product_list, get_category_list, get_user_cart_with_items, get_user_orders
 
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import ValidationError
-
-
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.exceptions import ValidationError
 from django.db import transaction
 
 class CategoryViewSet(viewsets.ModelViewSet):
     """ViewSet для категорий"""
 
-    queryset = Category.objects.all()
+    def get_queryset(self):
+        return get_category_list()
+    
     serializer_class = CategorySerializer
 
 
 class ProductViewSet(viewsets.ModelViewSet):
     """ViewSet для товаров"""
 
-    queryset = Product.objects.all()
+    def get_queryset(self):
+        return get_product_list()
+    
     serializer_class = ProductSerializer
     
     filter_backends = [
@@ -40,7 +41,10 @@ class ProductViewSet(viewsets.ModelViewSet):
 
 class CartViewSet(viewsets.ReadOnlyModelViewSet):
     """ViewSet для просмотра корзины"""
-    queryset = Cart.objects.all()
+
+    def get_queryset(self):
+        return get_user_cart_with_items(user=self.request.user)
+    
     serializer_class = CartSerializer
 
 class CartItemViewSet(viewsets.ModelViewSet):
@@ -53,7 +57,7 @@ class CartItemViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         # Пользователь видит только свою корзину
-        return CartItem.objects.filter(cart__user=self.request.user)
+        return get_user_cart_with_items(user=self.request.user)
 
     def perform_create(self, serializer):
         # Автоматическая привязка корзины
@@ -80,7 +84,7 @@ class OrderViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         # Пользователь видит только свои заказы
-        return Order.objects.filter(user=self.request.user)
+        return get_user_orders(user=self.request.user)
 
     @action(detail=False, methods=['post'])
     def checkout(self, request):
