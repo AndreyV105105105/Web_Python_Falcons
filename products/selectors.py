@@ -3,10 +3,7 @@ from .models import Product, Category, Cart, Order, CartItem
 
 
 def get_product_list(filters=None):
-    """
-    Селектор для получения списка товаров с фильтрацией.
-    Возвращаем QuerySet, не вычисляя сразу.
-    """
+    """Селектор для получения списка товаров с фильтрацией"""
     queryset = Product.objects.select_related('category').all()
 
     if filters:

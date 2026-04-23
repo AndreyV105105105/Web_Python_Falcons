@@ -2,7 +2,7 @@ from rest_framework.test import APITestCase
 from rest_framework import status
 from django.urls import reverse
 from django.contrib.auth.models import User
-from .models import Category, Product, Cart, CartItem, Order, OrderItem
+from Web_Python_Falcons.products.models import Category, Product, Cart, CartItem, Order, OrderItem
 
 class ProductCatalogTests(APITestCase):
     def setUp(self):
