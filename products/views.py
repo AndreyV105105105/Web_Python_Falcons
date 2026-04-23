@@ -1,14 +1,12 @@
 from rest_framework import viewsets, filters
 from django_filters.rest_framework import DjangoFilterBackend
-from .models import Category, Product, Cart, CartItem, Order, OrderItem
+from .models import Cart, CartItem, Order, OrderItem
 from .serializers import CategorySerializer, ProductSerializer, CartSerializer, CartItemSerializer, OrderSerializer
 from .selectors import get_product_list, get_category_list, get_user_cart_with_items, get_user_orders
 
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import ValidationError
 from rest_framework.decorators import action
-from rest_framework.response import Response
-from rest_framework import status
 from django.db import transaction
 
 class CategoryViewSet(viewsets.ModelViewSet):
