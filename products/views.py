@@ -4,6 +4,8 @@ from .models import Cart, CartItem, Order, OrderItem
 from .serializers import CategorySerializer, ProductSerializer, CartSerializer, CartItemSerializer, OrderSerializer
 from .selectors import get_product_list, get_category_list, get_user_cart_with_items, get_user_orders
 
+from products.services.order_service import create_order_from_cart
+
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import ValidationError
 from rest_framework.decorators import action
@@ -87,66 +89,11 @@ class OrderViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['post'])
     def checkout(self, request):
         """
-        эндпоинт для оформления заказа из корзины.
+        Эндпоинт для оформления заказа.
         """
-        user = request.user
+        # Вызываем сервис
+        order = create_order_from_cart(user=request.user)
 
-        # Ищем корзину
-        try:
-            cart = Cart.objects.get(user=user)
-        except Cart.DoesNotExist:
-            raise ValidationError({"detail": "У вас нет корзины."})
-
-        # Берем все товары в корзине
-        cart_items = cart.items.select_related('product').all()
-
-        if not cart_items.exists():
-            raise ValidationError({"detail": "Ваша корзина пуста."})
-
-        # 2. открываем транзакцию
-        with transaction.atomic():
-
-            # Считаем общую сумму заказа
-            total_price = sum(item.product.price * item.quantity for item in cart_items)
-
-            # Создаем заказ
-            order = Order.objects.create(
-                user=user,
-                status='new',
-                total_price=total_price
-            )
-
-            # Переносим товары из корзины в заказ и списываем со склада
-            order_items_to_create = []
-
-            for item in cart_items:
-                product = item.product
-
-                if product.quantity < item.quantity:
-                    raise ValidationError(
-                        {"detail": f"Товар {product.name} закончился. В наличии: {product.quantity}"}
-                    )
-
-                # Списываем товар со склада
-                product.quantity -= item.quantity
-                product.save()
-
-                # Подготавливаем историю цены
-                order_items_to_create.append(
-                    OrderItem(
-                        order=order,
-                        product=product,
-                        quantity=item.quantity,
-                        price_at_purchase=product.price
-                    )
-                )
-
-            # Сохраняем все позиции заказа разом
-            OrderItem.objects.bulk_create(order_items_to_create)
-
-            # Очищаем корзину
-            cart_items.delete()
-
-        # Отдаем клиенту ответ с его новым заказом
+        # Упаковываем готовый ответ
         serializer = self.get_serializer(order)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
