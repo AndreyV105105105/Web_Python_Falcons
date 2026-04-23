@@ -1,11 +1,14 @@
 from rest_framework.test import APITestCase
 from rest_framework import status
 from django.urls import reverse
-from .models import Category, Product
+from django.contrib.auth.models import User
+from .models import Category, Product, Cart, CartItem
 
 class ProductCatalogTests(APITestCase):
     def setUp(self):
         """Подготовка данных"""
+        self.user = User.objects.create_user(username='Legenda', password='67try')
+        self.client.force_authenticate(user=self.user)
         self.category = Category.objects.create(name="Электроника", slug="electronics")
         self.product1 = Product.objects.create(
             name="Xiaomi 15",
@@ -57,3 +60,21 @@ class ProductCatalogTests(APITestCase):
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['name'], "Xiaomi 15")
+
+    def test_add_to_cart_success(self):
+        url = reverse('cartitem-list')
+        data = {'product': self.product1.id, 'quantity': 2}
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(CartItem.objects.count(), 1)
+
+    def test_checkout_decreases_stock(self):
+        cart, _ = Cart.objects.get_or_create(user=self.user)
+        CartItem.objects.create(cart=cart, product=self.product1, quantity=3)
+
+        url = reverse('order-checkout')
+        response = self.client.post(url)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.product1.refresh_from_db()
+        self.assertEqual(self.product1.quantity, 7)
