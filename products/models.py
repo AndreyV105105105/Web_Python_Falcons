@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import CheckConstraint, Q
 from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator
 
@@ -69,6 +70,17 @@ class Product(models.Model):
         verbose_name = "Товар"
         verbose_name_plural = "Товары"
         ordering = ['-created_at']
+
+        constraints = [
+            CheckConstraint(
+                condition=Q(price__gte=0),
+                name='product_price_non_negative'
+            ),
+            CheckConstraint(
+                condition=Q(quantity__gte=0),
+                name='product_quantity_non_negative'
+            ),
+        ]
 
     def __str__(self):
         return f"{self.name} - {self.price} ₽"
@@ -167,6 +179,13 @@ class Order(models.Model):
         verbose_name_plural = "Заказы"
         ordering = ['-created_at']
 
+        constraints = [
+            CheckConstraint(
+                condition=Q(total_price__gte=0),
+                name='order_total_price_non_negative'
+            ),
+        ]
+
     def __str__(self):
         return f"Заказ #{self.id} от {self.user.username}"
 
@@ -197,6 +216,17 @@ class OrderItem(models.Model):
     class Meta:
         verbose_name = "Товар в заказе"
         verbose_name_plural = "Товары в заказе"
+
+        constraints = [
+            CheckConstraint(
+                condition=Q(quantity__gt=0),
+                name='orderitem_quantity_positive'
+            ),
+            CheckConstraint(
+                condition=Q(price_at_purchase__gte=0),
+                name='orderitem_price_non_negative'
+            ),
+        ]
 
     def __str__(self):
         return f"{self.product.name} x {self.quantity}"

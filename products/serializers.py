@@ -5,7 +5,7 @@ class CategorySerializer(serializers.ModelSerializer):
     """Сериализатор для категорий"""
     class Meta:
         model = Category
-        
+
         fields = ['id', 'name', 'slug', 'description']
 
 
@@ -39,17 +39,8 @@ class CartItemSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'product_name', 'total_price']
 
     def get_total_price(self, obj):
+        # Берет сумму одной позиции
         return obj.get_total_price()
-
-    def validate(self, data):
-        """Проверка наличия товара на складе"""
-        product = data['product']
-        quantity = data['quantity']
-        if product.quantity < quantity:
-            raise serializers.ValidationError(
-                f"Недостаточно товара {product.name} на складе. В наличии: {product.quantity}"
-            )
-        return data
 
 class CartSerializer(serializers.ModelSerializer):
     """Сериализатор для корзины"""
@@ -59,6 +50,11 @@ class CartSerializer(serializers.ModelSerializer):
     class Meta:
         model = Cart
         fields = ['id', 'user', 'items', 'total_price', 'created_at']
+        read_only_fields = ['user', 'total_price', 'created_at']
+
+    def get_total_price(self, obj):
+        # Берет общую сумму всей корзины
+        return obj.get_total_price()
 
 class OrderItemSerializer(serializers.ModelSerializer):
     """Сериализатор для позиции в заказе"""
