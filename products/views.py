@@ -62,7 +62,9 @@ class CartItemViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         product = serializer.validated_data['product']
-        quantity = serializer.validated_data['quantity']
+        # Пытаемся взять quantity, если его нет, то по умолчанию ставим 1
+        quantity = serializer.validated_data.get('quantity', 1)
+        quantity = int(quantity)
         cart, _ = Cart.objects.get_or_create(user=self.request.user)
 
         # Вызываем сервис и сохраняем результат
