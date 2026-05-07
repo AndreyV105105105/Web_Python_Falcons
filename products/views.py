@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from .models import Cart, CartItem, Order, OrderItem
 from .serializers import CategorySerializer, ProductSerializer, CartSerializer, CartItemSerializer, OrderSerializer
-from .selectors import get_product_list, get_category_list, get_user_cart_with_items, get_user_orders
+from .selectors import get_product_by_id, get_product_list, get_category_list, get_user_cart_with_items, get_user_orders
 
 from products.services.order_service import create_order_from_cart
 from products.services.cart_services import add_item_to_cart
@@ -27,6 +27,10 @@ class ProductViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         return get_product_list()
+    
+    def get_object(self):
+        pk = self.kwargs.get('pk')
+        return get_product_by_id(pk) 
     
     serializer_class = ProductSerializer
     
