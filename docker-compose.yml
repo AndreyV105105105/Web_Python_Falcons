@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  django_web:
+    build:
+      context: .
+      dockerfile: Dockerfile.django
+    container_name: django_core
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app  # Прокидываем код для hot-reload
+    env_file:
+      - .env
+    restart: unless-stopped
+
+  fastapi_service:
+    build:
+      context: ./notification_ugc_service
+      dockerfile: Dockerfile.fastapi
+    container_name: fastapi_ugc
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./notification_ugc_service:/app  # Прокидываем код для hot-reload
+    environment:
+      # FastAPI должен знать, как стучаться в Django, если потребуется
+      - DJANGO_URL=http://django_web:8000
+    restart: unless-stopped
