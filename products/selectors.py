@@ -1,6 +1,9 @@
+import httpx
+import logging
 from django.db.models import Prefetch
 from .models import Product, Category, Cart, Order, CartItem
 
+logger = logging.getLogger(__name__)
 
 def get_product_list(filters=None):
     """Селектор для получения списка товаров с фильтрацией"""
@@ -18,10 +21,29 @@ def get_product_list(filters=None):
 
     return queryset
 
+def get_product_reviews(product_id):
+    """Функция для получения отзывов из FastAPI"""
+
+    try:
+        response = httpx.get(f'http://reviews-service/api/products/{product_id}/reviews')
+        response.raise_for_status()
+        return response.json()
+    except httpx.RequestError as exc:
+        logging.error(f'Ошибка при запросе отзывов для товара {product_id}: {exc}')
+        return []
+    except httpx.HTTPStatusError as exc:
+        logging.error(f'Неверный ответ при запросе отзывов для товара {product_id}: {exc}')
+        return []
 
 def get_product_by_id(product_id):
     """Получаем один товар по ID"""
-    return Product.objects.select_related('category').get(id=product_id)
+    
+    product = Product.objects.select_related('category').get(id=product_id)
+    reviews = get_product_reviews(product_id)
+    product.reviews = reviews
+
+    return product
+
 
 
 def get_category_list():

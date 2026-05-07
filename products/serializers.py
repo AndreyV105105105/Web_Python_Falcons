@@ -11,6 +11,9 @@ class CategorySerializer(serializers.ModelSerializer):
 
 class ProductSerializer(serializers.ModelSerializer):
     """Сериализатор для товаров"""
+
+    reviews = serializers.ReadOnlyField()
+
     class Meta:
         model = Product
 
@@ -22,7 +25,8 @@ class ProductSerializer(serializers.ModelSerializer):
             'category', 
             'quantity', 
             'is_available', 
-            'created_at'
+            'created_at',
+            'reviews'
         ]
         
         read_only_fields = ['created_at']

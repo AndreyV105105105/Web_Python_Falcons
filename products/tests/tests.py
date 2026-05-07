@@ -3,6 +3,7 @@ from rest_framework import status
 from django.urls import reverse
 from django.contrib.auth.models import User
 from products.models import Category, Product, Cart, CartItem, Order, OrderItem
+from unittest.mock import patch
 
 class ProductCatalogTests(APITestCase):
     def setUp(self):
@@ -52,14 +53,37 @@ class ProductCatalogTests(APITestCase):
         self.assertEqual(len(response.data['results']), 1)
         self.assertEqual(response.data['results'][0]['name'], "Xiaomi 15")
     
-    def test_get_product(self):
-        """Проверяет получение товара"""
+    @patch('products.selectors.get_product_reviews')
+    def test_get_product(self, mock_reviews):
+        """Проверяет получение товара и интеграцию отзывов"""
+
+        mock_data = [
+            {"id": 1, "text": "Cool phone!", "rating": 5},
+            {"id": 2, "text": "Too expensive", "rating": 4}
+        ]
+        
+        mock_reviews.return_value = mock_data
 
         url = reverse('product-detail', kwargs={'pk': self.product1.id})
         response = self.client.get(url)
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['name'], "Xiaomi 15")
+        self.assertEqual(response.data['reviews'], mock_data)
+        self.assertEqual(len(response.data['reviews']), 2)
+        self.assertEqual(response.data['reviews'][0]['text'], "Cool phone!")
+    
+    @patch('products.selectors.get_product_reviews')
+    def test_get_product_reviews_error(self, mock_reviews):
+        """Проверяет отобрадение товара при ошибке получения отзывов"""
+        
+        mock_reviews.return_value = [] 
+
+        url = reverse('product-detail', kwargs={'pk': self.product1.id})
+        response = self.client.get(url)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['reviews'], [])
 
     def test_add_to_cart_success(self):
         url = reverse('cartitem-list')
