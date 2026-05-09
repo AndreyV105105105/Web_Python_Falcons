@@ -1,3 +1,4 @@
+import logging
 from fastapi import FastAPI, Depends, BackgroundTasks, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, update
@@ -11,6 +12,12 @@ from .schemas import (
     OrderNotificationPayload, NotificationResponse
 )
 
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(name)s: %(message)s'
+)
+logger = logging.getLogger(__name__)
+
 async def create_tables():
     """Создаём таблицы при старте"""
     async with async_engine.begin() as conn:
@@ -18,26 +25,27 @@ async def create_tables():
 
 # Инициализируем приложение FastAPI
 app = FastAPI(
-    title="Notification & UGC Service",
+    title='Notification & UGC Service',
     on_startup=[create_tables]
 )
 
 
-@app.post("/reviews/", response_model=ReviewRead, status_code=status.HTTP_201_CREATED)
+@app.post('/reviews/', response_model=ReviewRead, status_code=status.HTTP_201_CREATED)
 async def create_review(
         review: ReviewCreate,
         background_tasks: BackgroundTasks,
         db: AsyncSession = Depends(get_db)
 ):
     """Создать отзыв + запустить пересчёт рейтинга в фоне"""
+    logger.info(f'Создание отзыва: product_id={review.product_id}, user_id={review.user_id}, rating={review.rating}')
 
     db_review = Review(
         product_id=review.product_id,
         user_id=review.user_id,
-        user_name=f"User_{review.user_id}",
+        user_name=f'User_{review.user_id}',
         rating=review.rating,
         comment=review.comment,
-        status="active",
+        status='active',
         created_at=datetime.now(timezone.utc)
     )
 
@@ -51,24 +59,25 @@ async def create_review(
     return db_review
 
 
-@app.get("/products/{product_id}/reviews", response_model=ProductUGCResponse)
+@app.get('/products/{product_id}/reviews', response_model=ProductUGCResponse)
 async def get_product_reviews(
         product_id: int,
         db: AsyncSession = Depends(get_db)
 ):
-    """Получить все отзывы товара"""
+    """Получить все отзывы товара + сводный рейтинг"""
+    logger.info(f'Запрос отзывов для товара #{product_id}')
 
+    # Получаем активные отзывы
     reviews_stmt = select(Review).where(
         Review.product_id == product_id,
-        Review.status == "active"
+        Review.status == 'active'
     ).order_by(Review.created_at.desc())
 
     result = await db.execute(reviews_stmt)
     reviews = result.scalars().all()
 
-    rating_stmt = select(ProductRating).where(
-        ProductRating.product_id == product_id
-    )
+    # Пробуем взять кэшированный рейтинг
+    rating_stmt = select(ProductRating).where(ProductRating.product_id == product_id)
     rating_result = await db.execute(rating_stmt)
     cached_rating = rating_result.scalar_one_or_none()
 
@@ -79,7 +88,7 @@ async def get_product_reviews(
         avg_result = await db.execute(
             select(func.avg(Review.rating)).where(
                 Review.product_id == product_id,
-                Review.status == "active"
+                Review.status == 'active'
             )
         )
         avg_rating = avg_result.scalar() or 0.0
@@ -94,7 +103,9 @@ async def get_product_reviews(
 
 
 async def recalculate_product_rating(product_id: int):
-    """Фоновая задача: пересчитать средний рейтинг"""
+    """Фоновая задача: пересчитать средний рейтинг товара"""
+    logger.info(f'Фоновый пересчёт рейтинга для товара #{product_id}')
+
     async with AsyncSessionLocal() as db:
         result = await db.execute(
             select(
@@ -102,7 +113,7 @@ async def recalculate_product_rating(product_id: int):
                 func.count(Review.id)
             ).where(
                 Review.product_id == product_id,
-                Review.status == "active"
+                Review.status == 'active'
             )
         )
         avg_rating, count = result.first()
@@ -118,6 +129,7 @@ async def recalculate_product_rating(product_id: int):
             )
         )
         await db.commit()
+        logger.info(f'Рейтинг для товара #{product_id} обновлён: {avg_rating} ({count} отзывов)')
 
 
 
