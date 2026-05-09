@@ -1,6 +1,7 @@
 import logging
 from fastapi import FastAPI, Depends, BackgroundTasks, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.dialects.sqlite import insert
 from sqlalchemy import select, func, update
 from datetime import datetime, timezone
 import asyncio
@@ -52,6 +53,8 @@ async def create_review(
     db.add(db_review)
     await db.flush()
     await db.refresh(db_review)
+
+    await db.commit()
 
     # Запускаем пересчёт рейтинга в фоне
     background_tasks.add_task(recalculate_product_rating, review.product_id)
@@ -118,16 +121,27 @@ async def recalculate_product_rating(product_id: int):
         )
         avg_rating, count = result.first()
         avg_rating = avg_rating or 0.0
+        count = count or 0
 
-        await db.execute(
-            update(ProductRating)
-            .where(ProductRating.product_id == product_id)
-            .values(
-                average_rating=avg_rating,
-                reviews_count=count,
-                updated_at=datetime.now(timezone.utc)
-            )
+        update_stmt = update(ProductRating).where(
+            ProductRating.product_id == product_id
+        ).values(
+            average_rating=avg_rating,
+            reviews_count=count,
+            updated_at=datetime.now(timezone.utc)
         )
+        result = await db.execute(update_stmt)
+
+        if result.rowcount == 0:
+            await db.execute(
+                insert(ProductRating).values(
+                    product_id=product_id,
+                    average_rating=avg_rating,
+                    reviews_count=count,
+                    updated_at=datetime.now(timezone.utc)
+                )
+            )
+
         await db.commit()
         logger.info(f'Рейтинг для товара #{product_id} обновлён: {avg_rating} ({count} отзывов)')
 
