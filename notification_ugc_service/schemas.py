@@ -7,6 +7,7 @@ from datetime import datetime
 class ReviewBase(BaseModel):
     """Базовая схема отзыва"""
     product_id: int = Field(..., description="ID товара из основной БД Django")
+    user_id: int = Field(..., description="ID пользователя из основной БД Django")
     rating: int = Field(..., ge=1, le=5, description="Рейтинг от 1 до 5")
     comment: str = Field(..., min_length=5, max_length=1000, description="Текст отзыва")
 

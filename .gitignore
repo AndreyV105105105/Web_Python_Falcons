@@ -6,6 +6,7 @@ ENV/
 # БД
 db.sqlite3
 db.sqlite3-journal
+ugc_db.sqlite3
 
 .env
 
