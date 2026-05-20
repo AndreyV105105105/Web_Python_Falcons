@@ -9,7 +9,7 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - .:/app  # Прокидываем код для hot-reload
+      - .:/app
     env_file:
       - .env
     restart: unless-stopped
@@ -22,8 +22,22 @@ services:
     ports:
       - "8001:8001"
     volumes:
-      - ./notification_ugc_service:/app  # Прокидываем код для hot-reload
+      - ./notification_ugc_service:/app
     environment:
-      # FastAPI должен знать, как стучаться в Django, если потребуется
       - DJANGO_URL=http://django_web:8000
+    restart: unless-stopped
+
+
+  flask_service:
+    build:
+      context: ./ugc_flask_service
+      dockerfile: Dockerfile.flask
+    container_name: flask_ugc
+    ports:
+      - "8002:8002"
+    volumes:
+      - ./ugc_flask_service:/app
+    environment:
+      - DJANGO_URL=http://django_web:8000
+      - FASTAPI_URL=http://fastapi_service:8001
     restart: unless-stopped
