@@ -7,6 +7,15 @@ ENV/
 db.sqlite3
 db.sqlite3-journal
 ugc_db.sqlite3
+db.sqlite3-wal
+db.sqlite3-shm
+ugc_db.sqlite3-journal
+ugc_db.sqlite3-wal
+ugc_db.sqlite3-shm
+ugc.db
+ugc.db-journal
+ugc.db-wal
+ugc.db-shm
 
 .env
 
