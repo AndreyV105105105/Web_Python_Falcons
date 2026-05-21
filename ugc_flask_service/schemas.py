@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, field_validator, ValidationError
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional
 
 
@@ -17,17 +17,6 @@ class ReviewCreate(BaseModel):
         if not v.strip():
             raise ValueError('Комментарий не может состоять только из пробелов')
         return v.strip()
-
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "product_id": 1,
-                "user_id": 42,
-                "user_name": "Иван Иванов",
-                "rating": 5,
-                "comment": "Отличный товар! Быстрая доставка, качественная упаковка."
-            }
-        }
 
 
 class ReviewResponse(BaseModel):
