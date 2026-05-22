@@ -31,6 +31,7 @@ def health_check():
 
 
 @app.route('/api/v1/ugc/reviews/', methods=['POST'])
+@app.route('/api/v1/ugc/', methods=['POST'])
 def create_review():
     """Создание отзыва с валидацией и проверкой товара в Django"""
 
