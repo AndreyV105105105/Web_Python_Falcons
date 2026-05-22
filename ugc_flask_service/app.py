@@ -3,7 +3,7 @@ from flask import Flask, jsonify, request
 from errors import register_error_handlers, APIError # Импортируем наши обработчики
 
 from schemas import ReviewCreate, ReviewResponse
-from services import create_review_service
+from services import create_review_service, update_review_status_service
 from pydantic import ValidationError
 from models import Review, db
 from database import init_db
@@ -15,7 +15,7 @@ init_db(app)
 
 register_error_handlers(app)
 
-DJANGO_URL = os.getenv("DJANGO_URL", "http://django_web:8000")
+DJANGO_URL = os.getenv("DJANGO_URL", "http://django-web:8000")
 FASTAPI_URL = os.getenv("FASTAPI_URL", "http://fastapi_service:8001")
 
 @app.route('/api/v1/health', methods=['GET'])
@@ -34,8 +34,7 @@ def health_check():
 @app.route('/api/v1/ugc/reviews/', methods=['POST'])
 @app.route('/api/v1/ugc/', methods=['POST'])
 def create_review():
-    """Создание отзыва с валидацией и проверкой товара в Django"""
-
+    """Создание отзыва с валидацией и проверкой товара в Django через слой сервисов"""
     try:
         data = request.get_json(force=True, silent=True)
         if not data:
@@ -49,18 +48,6 @@ def create_review():
             details=errors
         )
 
-    try:
-        with httpx.Client(timeout=2.0) as client:
-            response = client.get(f'{DJANGO_URL}/api/products/{review_data.product_id}/')
-            if response.status_code == 404:
-                raise APIError(
-                    message='Товар не найден',
-                    status_code=404,
-                    details={'product_id': review_data.product_id}
-                )
-    except httpx.RequestError as e:
-        app.logger.warning(f'Не удалось проверить товар {review_data.product_id} в Django: {e}')
-
     new_review = create_review_service(
         product_id=review_data.product_id,
         user_id=review_data.user_id,
@@ -70,6 +57,27 @@ def create_review():
     )
 
     return jsonify(ReviewResponse.model_validate(new_review).model_dump()), 201
+
+
+@app.route('/api/v1/ugc/reviews/<int:review_id>/moderate', methods=['PATCH'])
+def moderate_review(review_id: int):
+    """Эндпоинт для изменения статуса модерации отзыва администратором"""
+    data = request.get_json(force=True, silent=True)
+
+    if not data or 'status' not in data:
+        raise APIError(
+            message='Отсутствует обязательное поле status',
+            status_code=400
+        )
+
+    new_status = data['status']
+    updated_review = update_review_status_service(review_id=review_id, new_status=new_status)
+
+    return jsonify({
+        'success': True,
+        'message': f'Статус отзыва #{review_id} успешно изменен',
+        'review': updated_review.to_dict()
+    }), 200
 
 
 @app.route('/api/v1/ugc/products/<int:product_id>/reviews', methods=['GET'])
