@@ -25,14 +25,22 @@ def get_product_reviews(product_id):
     """Функция для получения отзывов из FastAPI"""
 
     try:
-        response = httpx.get(f'http://reviews-service/api/products/{product_id}/reviews')
+        response = httpx.get(
+            f'http://flask-ugc-service:8002/api/v1/ugc/products/{product_id}/reviews',
+            params={'status': 'active'},
+            timeout=2.0
+        )
+
         response.raise_for_status()
-        return response.json()
-    except httpx.RequestError as exc:
-        logging.error(f'Ошибка при запросе отзывов для товара {product_id}: {exc}')
+        data = response.json()
+
+        return data.get('reviews', [])
+    
+    except httpx.RequestError as e:
+        logging.error(f'Ошибка при запросе отзывов для товара {product_id}: {e}')
         return []
-    except httpx.HTTPStatusError as exc:
-        logging.error(f'Неверный ответ при запросе отзывов для товара {product_id}: {exc}')
+    except httpx.HTTPStatusError as e:
+        logging.error(f'Неверный ответ при запросе отзывов для товара {product_id}: {e}')
         return []
 
 def get_product_by_id(product_id):
@@ -43,8 +51,6 @@ def get_product_by_id(product_id):
     product.reviews = reviews
 
     return product
-
-
 
 def get_category_list():
     """Получаем список категорий"""
