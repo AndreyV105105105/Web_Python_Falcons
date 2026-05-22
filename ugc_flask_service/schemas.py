@@ -1,6 +1,6 @@
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 from typing import Optional
-
+from datetime import datetime
 
 class ReviewCreate(BaseModel):
     """Схема для создания отзыва"""
@@ -21,6 +21,7 @@ class ReviewCreate(BaseModel):
 
 class ReviewResponse(BaseModel):
     """Схема ответа с отзывом"""
+    model_config = ConfigDict(from_attributes=True)
     id: int
     product_id: int
     user_id: int
@@ -28,7 +29,4 @@ class ReviewResponse(BaseModel):
     rating: int
     comment: str
     status: str
-    created_at: Optional[str] = None
-
-    class Config:
-        from_attributes = True
+    created_at: Optional[datetime] = None
