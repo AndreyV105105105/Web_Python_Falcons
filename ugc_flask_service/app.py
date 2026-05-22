@@ -3,6 +3,7 @@ from flask import Flask, jsonify, request
 from errors import register_error_handlers, APIError # Импортируем наши обработчики
 
 from schemas import ReviewCreate, ReviewResponse
+from services import create_review_service
 from pydantic import ValidationError
 from models import Review, db
 from database import init_db
@@ -60,22 +61,13 @@ def create_review():
     except httpx.RequestError as e:
         app.logger.warning(f'Не удалось проверить товар {review_data.product_id} в Django: {e}')
 
-    new_review = Review(
+    new_review = create_review_service(
         product_id=review_data.product_id,
         user_id=review_data.user_id,
         user_name=review_data.user_name,
         rating=review_data.rating,
-        comment=review_data.comment,
-        status='pending'
+        comment=review_data.comment
     )
-    try:
-        db.session.add(new_review)
-        db.session.commit()
-        app.logger.info(f'Создан отзыв #{new_review.id} для товара #{new_review.product_id}')
-    except Exception as e:
-        db.session.rollback()
-        app.logger.error(f'Ошибка сохранения отзыва: {e}')
-        raise APIError(message='Ошибка сохранения данных', status_code=500)
 
     return jsonify(ReviewResponse.model_validate(new_review).model_dump()), 201
 
