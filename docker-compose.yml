@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  django_web:
+  django-web:
     build:
       context: .
       dockerfile: Dockerfile.django
@@ -24,7 +24,7 @@ services:
     volumes:
       - ./notification_ugc_service:/app
     environment:
-      - DJANGO_URL=http://django_web:8000
+      - DJANGO_URL=http://django-web:8000
     restart: unless-stopped
 
 
@@ -38,6 +38,6 @@ services:
     volumes:
       - ./ugc_flask_service:/app
     environment:
-      - DJANGO_URL=http://django_web:8000
+      - DJANGO_URL=http://django-web:8000
       - FASTAPI_URL=http://fastapi_service:8001
     restart: unless-stopped
