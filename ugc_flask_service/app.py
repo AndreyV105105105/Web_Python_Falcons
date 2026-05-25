@@ -1,13 +1,12 @@
 import os
 from flask import Flask, jsonify, request
-from errors import register_error_handlers, APIError # Импортируем наши обработчики
+from errors import register_error_handlers, APIError
 
 from schemas import ReviewCreate, ReviewResponse
 from services import create_review_service, update_review_status_service
 from pydantic import ValidationError
-from models import Review, db
+from models import Review
 from database import init_db
-import httpx
 
 app = Flask(__name__)
 
@@ -34,7 +33,6 @@ def health_check():
 @app.route('/api/v1/ugc/reviews/', methods=['POST'])
 @app.route('/api/v1/ugc/', methods=['POST'])
 def create_review():
-    """Создание отзыва с валидацией и проверкой товара в Django через слой сервисов"""
     try:
         data = request.get_json(force=True, silent=True)
         if not data:
@@ -82,7 +80,6 @@ def moderate_review(review_id: int):
 
 @app.route('/api/v1/ugc/products/<int:product_id>/reviews', methods=['GET'])
 def get_product_reviews(product_id: int):
-    """Получение активных отзывов для товара"""
     status_filter = request.args.get('status', 'active')
 
     reviews = Review.query.filter_by(

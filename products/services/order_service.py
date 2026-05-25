@@ -3,7 +3,7 @@ import logging
 from django.db import transaction
 from core.exceptions import EmptyCartError, NotEnoughStockError
 from products.models import Cart, Order, OrderItem
-
+from rest_framework_simplejwt.tokens import RefreshToken
 logger = logging.getLogger(__name__)
 
 def create_order_from_cart(user):
@@ -18,7 +18,6 @@ def create_order_from_cart(user):
     if not cart_items.exists():
         raise EmptyCartError("Ваша корзина пуста, добавьте товары.")
 
-    # Основная логика создания заказа
     with transaction.atomic():
         total_price = sum(item.product.price * item.quantity for item in cart_items)
 
@@ -33,7 +32,6 @@ def create_order_from_cart(user):
         for item in cart_items:
             product = item.product
 
-            # Проверка наличия на складе
             if product.quantity < item.quantity:
                 raise NotEnoughStockError(
                     f"Товар '{product.name}' закончился. В наличии: {product.quantity} шт."
@@ -54,7 +52,6 @@ def create_order_from_cart(user):
         OrderItem.objects.bulk_create(order_items_to_create)
         cart_items.delete()
 
-    # Формируем список товаров для уведомления
     items_payload = [
         {
             "product_name": item.product.name,
@@ -72,11 +69,12 @@ def create_order_from_cart(user):
         "created_at": order.created_at.isoformat() if hasattr(order, 'created_at') else None
     }
 
+    access_token = str(RefreshToken.for_user(user).access_token)
     try:
-        # Отправляем POST запрос в микросервис
         response = httpx.post(
             "http://fastapi_service:8001/notifications/new-order",
             json=notification_data,
+            headers={"Authorization": f"Bearer {access_token}"},
             timeout=5.0
         )
         response.raise_for_status()
@@ -84,7 +82,6 @@ def create_order_from_cart(user):
         logger.info(f"Успешно отправлено уведомление в FastAPI для заказа №{order.id}")
 
     except Exception as e:
-        # Логируем ошибку, но не прерываем работу Django, так как заказ в БД уже создан
         logger.error(f"Ошибка при отправке уведомления в FastAPI для заказа №{order.id}: {e}")
 
     return order

@@ -21,7 +21,6 @@ def check_product_exists_in_django(product_id: int):
                     status_code=404,
                     details={'product_id': product_id}
                 )
-            # Если Django ответил что-то кроме 200 и 404
             elif response.status_code != 200:
                 raise APIError(
                     message='Ошибка внешней системы при проверке товара',
@@ -36,7 +35,6 @@ def check_product_exists_in_django(product_id: int):
         )
 
 def create_review_service(product_id: int, user_id: int, user_name: str, rating: int, comment: str) -> Review:
-    # Интеграционная проверка товара
     check_product_exists_in_django(product_id)
 
     new_review = Review(
@@ -68,7 +66,7 @@ def update_review_status_service(review_id: int, new_status: str) -> Review:
             details={'allowed_statuses': allowed_statuses}
         )
 
-    review = Review.query.get(review_id)
+    review = db.session.get(Review, review_id)
     if not review:
         raise APIError(
             message='Отзыв не найден',

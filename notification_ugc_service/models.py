@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Float, Text, DateTime, CheckConstraint
 from datetime import datetime, timezone
-from .database import Base
+from database import Base
 
 
 class Review(Base):

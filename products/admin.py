@@ -5,9 +5,9 @@ from .models import Category, Product, Cart, CartItem, Order, OrderItem
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
     """Настройки админки для категорий"""
-    list_display = ['name', 'slug']  # Какие поля показывать в списке
-    search_fields = ['name']  # Поиск по названию
-    prepopulated_fields = {'slug': ('name',)}  # Slug заполняется автоматически из name
+    list_display = ['name', 'slug']
+    search_fields = ['name']
+    prepopulated_fields = {'slug': ('name',)}
 
 
 @admin.register(Product)
@@ -15,7 +15,7 @@ class ProductAdmin(admin.ModelAdmin):
     """Настройки админки для товаров"""
     list_display = ['name', 'price', 'category', 'quantity', 'is_available', 'created_at']
     list_filter = ['category', 'is_available']
-    search_fields = ['name', 'description']  # Поиск по названию и описанию
+    search_fields = ['name', 'description']
     list_editable = ['is_available', 'quantity']
     raw_id_fields = ['category']
 
@@ -38,7 +38,7 @@ class CartItemAdmin(admin.ModelAdmin):
 class OrderAdmin(admin.ModelAdmin):
     """Настройки админки для заказов"""
     list_display = ['id', 'user', 'status', 'total_price', 'created_at']
-    list_filter = ['status']  # Фильтр по статусу заказа
+    list_filter = ['status']
     search_fields = ['user__username', 'id']
     readonly_fields = ['total_price', 'created_at']
 

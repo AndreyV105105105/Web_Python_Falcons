@@ -1,7 +1,7 @@
 from rest_framework import viewsets, filters, status
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
-from .models import Cart, CartItem, Order, OrderItem
+from .models import Cart, CartItem, Order
 from .serializers import CategorySerializer, ProductSerializer, CartSerializer, CartItemSerializer, OrderSerializer
 from .selectors import get_product_by_id, get_product_list, get_category_list, get_user_cart_with_items, get_user_orders
 
@@ -9,9 +9,7 @@ from products.services.order_service import create_order_from_cart
 from products.services.cart_services import add_item_to_cart
 
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.exceptions import ValidationError
 from rest_framework.decorators import action
-from django.db import transaction
 
 class CategoryViewSet(viewsets.ModelViewSet):
     """ViewSet для категорий"""
@@ -57,21 +55,18 @@ class CartItemViewSet(viewsets.ModelViewSet):
     """ViewSet для управления позициями в корзине"""
     queryset = CartItem.objects.all()
     serializer_class = CartItemSerializer
-    # Ограничиваем доступ: только для авторизованных пользователей
+    # только для авторизованных пользователей
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        # Пользователь видит только товары в своей корзине
         return CartItem.objects.filter(cart__user=self.request.user)
 
     def perform_create(self, serializer):
         product = serializer.validated_data['product']
-        # Пытаемся взять quantity, если его нет, то по умолчанию ставим 1
         quantity = serializer.validated_data.get('quantity', 1)
         quantity = int(quantity)
         cart, _ = Cart.objects.get_or_create(user=self.request.user)
 
-        # Вызываем сервис и сохраняем результат
         serializer.instance = add_item_to_cart(cart=cart, product=product, quantity=quantity)
 
 
@@ -80,7 +75,7 @@ class OrderViewSet(viewsets.ModelViewSet):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
 
-    # только для авторизованных
+    # только для авторизованных пользователей
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):

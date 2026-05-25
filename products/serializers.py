@@ -43,7 +43,6 @@ class CartItemSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'product_name', 'total_price']
 
     def get_total_price(self, obj):
-        # Берет сумму одной позиции
         return obj.get_total_price()
 
 class CartSerializer(serializers.ModelSerializer):

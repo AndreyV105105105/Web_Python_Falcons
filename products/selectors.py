@@ -26,7 +26,7 @@ def get_product_reviews(product_id):
 
     try:
         response = httpx.get(
-            f'http://flask-ugc-service:8002/api/v1/ugc/products/{product_id}/reviews',
+            f'http://flask_service:8002/api/v1/ugc/products/{product_id}/reviews',
             params={'status': 'active'},
             timeout=2.0
         )
